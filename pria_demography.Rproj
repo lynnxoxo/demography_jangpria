@@ -1,0 +1,20 @@
+Version: 1.0
+ProjectId: 7d7c7afe-32cf-4ad9-93c6-a2f78cf38579
+
+RestoreWorkspace: Default
+SaveWorkspace: Default
+AlwaysSaveHistory: Default
+
+EnableCodeIndexing: Yes
+UseSpacesForTab: Yes
+NumSpacesForTab: 2
+Encoding: UTF-8
+
+RnwWeave: knitr
+LaTeX: pdfLaTeX
+
+MarkdownReferences: Document
+
+ZoteroLibraries: "My Library"
+
+SpellingDictionary: en_GB

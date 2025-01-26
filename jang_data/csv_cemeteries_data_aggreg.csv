@@ -1,0 +1,108 @@
+﻿site_name,period,sex_gender,age,amount,system_name
+Börnicke,IA,indet,indiff,115,Seyer_1982
+Börnicke,IB,indet,indiff,147,Seyer_1982
+Börnicke,IIA,indet,indiff,74,Seyer_1982
+Börnicke,IIb1,indet,indiff,26,Seyer_1982
+Börnicke,IIb2,indet,indiff,21,Seyer_1982
+Putensen 1B,IA,indet,indiff,85,Harck_1972_cont
+Putensen 1B,IB,indet,indiff,86,Harck_1972_cont
+Putensen 1B,Ic,indet,indiff,85,Harck_1972_cont
+Putensen 1B,Id,indet,indiff,20,Harck_1972_cont
+Putensen 1B,IIA,indet,indiff,124,Harck_1972_cont
+Putensen 1B,IIB,indet,indiff,127,Harck_1972_cont
+Putensen 1B,IIc,indet,indiff,124,Harck_1972_cont
+"Billerbeck, Gm. Schnega",indiff,indet,indiff,175,broadest_horizon
+Ehestorf-Vahrendorf,Jastorf_a,indet,indiff,4,Schwantes_1909_cont
+Ehestorf-Vahrendorf,Jastorf_b,indet,indiff,5,Schwantes_1909_cont
+Ehestorf-Vahrendorf,Jastorf_c,indet,indiff,6,Schwantes_1909_cont
+Ehestorf-Vahrendorf,Ripdorf_1,indet,indiff,88,Schwantes_1909_cont
+Ehestorf-Vahrendorf,Ripdorf_2,indet,indiff,88,Schwantes_1909_cont
+Ehestorf-Vahrendorf,Seedorf_1,indet,indiff,223,Schwantes_1909_cont
+Ehestorf-Vahrendorf,Seedorf_2,indet,indiff,223,Schwantes_1909_cont
+Ehestorf-Vahrendorf,Seedorf_3,indet,indiff,223,Schwantes_1909_cont
+Ehestorf-Vahrendorf,B1,indet,indiff,27,Eggers
+Ehestorf-Vahrendorf,B2,indet,indiff,26,Eggers
+"Cosa, Gm. Brohm",VIa,indet,indiff,6,Keiling_1969_cont
+"Cosa, Gm. Brohm",IA,indet,indiff,6,Keiling_1969_cont
+"Cosa, Gm. Brohm",IB,indet,indiff,7,Keiling_1969_cont
+"Cosa, Gm. Brohm",Ic,indet,indiff,4,Keiling_1969_cont
+"Cosa, Gm. Brohm",IIA,indet,indiff,4,Keiling_1969_cont
+"Cosa, Gm. Brohm",IIB,indet,indiff,42,Keiling_1969_cont
+"Cosa, Gm. Brohm",IIc,indet,indiff,51,Keiling_1969_cont
+Hornbek,Id,indet,indiff,14,Hingst_1959
+Hornbek,IIA,indet,indiff,125,Hingst_1959
+Hornbek,IIB,indet,indiff,118,Hingst_1959
+Hornbek,IIc,indet,indiff,359,Hingst_1959
+Hornbek,IId,indet,indiff,358,Hingst_1959
+Alt Mölln Fpl. 13,Id,indet,indiff,4,Hingst_1959
+Alt Mölln Fpl. 13,IIA,indet,indiff,29,Hingst_1959
+Alt Mölln Fpl. 13,IIB,indet,indiff,24,Hingst_1959
+Alt Mölln Fpl. 13,IIc,indet,indiff,14,Hingst_1959
+Alt Mölln Fpl. 13,IId,indet,indiff,13,Hingst_1959
+Alt Mölln Fpl. 13,B1,indet,indiff,49,Hingst_1959
+Alt Mölln Fpl. 13,B2,indet,indiff,49,Hingst_1959
+Hamburg-Marmstorf 9_early,Wessenstedt,indet,indiff,3,Schwantes_1909_cont
+Hamburg-Marmstorf 9_early,Jastorf_a,indet,indiff,129,Schwantes_1909_cont
+Hamburg-Marmstorf 9_early,Jastorf_b,indet,indiff,130,Schwantes_1909_cont
+Hamburg-Marmstorf 9_late,Seedorf_3,indet,indiff,36,Schwantes_1909_cont
+Hamburg-Marmstorf 9_late,B1,indet,indiff,35,Schwantes_1909_cont
+Hamburg-Marmstorf 9_late,B2,indet,indiff,34,Schwantes_1909_cont
+Jevenstedt,Per_VI,indet,indiff,118,broad_horizon
+Jevenstedt,IA,indet,indiff,118,Hingst_1959
+Jevenstedt,IB,indet,indiff,120,Hingst_1959
+Jevenstedt,Ic,indet,indiff,118,Hingst_1959
+Tostedt-Wüstenhöfen,Seedorf_2,indet,indiff,31,Schwantes_1909_cont
+Tostedt-Wüstenhöfen,Seedorf_3,indet,indiff,31,Schwantes_1909_cont
+Tostedt-Wüstenhöfen,B1,indet,indiff,93,Eggers
+Tostedt-Wüstenhöfen,B2,indet,indiff,93,Eggers
+Badow,indiff,indet,indiff,551,broad_horizon
+Hamburg-Fuhlsbüttel,indiff,indet,indiff,2000,broad_horizon
+"Bollensen, Gm. Wieren",Per_VI,indet,indiff,2,Martens_1997
+"Bollensen, Gm. Wieren",Wessenstedt,indet,indiff,2,Schwantes_1909_cont
+"Bollensen, Gm. Wieren",Jastorf_a,indet,indiff,2,Schwantes_1909_cont
+"Bollensen, Gm. Wieren",Jastorf_b,indet,indiff,2,Schwantes_1909_cont
+"Bollensen, Gm. Wieren",Jastorf_c,indet,indiff,2,Schwantes_1909_cont
+"Bollensen, Gm. Wieren",Ripdorf_1,indet,indiff,6,Schwantes_1909_cont
+"Bollensen, Gm. Wieren",Ripdorf_2,indet,indiff,6,Schwantes_1909_cont
+"Bollensen, Gm. Wieren",indiff,indet,indiff,41,broad_horizon
+"Drögennindorf, Gm. Betzendorf",I,indet,indiff,11,Laux_2003_cont
+"Drögennindorf, Gm. Betzendorf",II,indet,indiff,20,Laux_2003_cont
+"Drögennindorf, Gm. Betzendorf",III,indet,indiff,27,Laux_2003_cont
+"Drögennindorf, Gm. Betzendorf",IV,indet,indiff,20,Laux_2003_cont
+"Drögennindorf, Gm. Betzendorf",indiff,indet,indiff,533,broad_horizon
+Sorsum,LT_C2,indet,indiff,15,Müller_1985
+Sorsum,LT_D1,indet,indiff,38,Müller_1985
+Sorsum,LT_D2_early,indet,indiff,4,Müller_1985
+Sorsum,LT_D2_late,indet,indiff,4,Müller_1985
+Sorsum,B1,indet,indiff,8,Eggers
+Sorsum,B2,indet,indiff,8,Eggers
+Sorsum,LPRIA,indet,indiff,225,broad_horizon
+Mang de Bargen LA 115,IA,indet,indiff,28,Hingst_1959
+Mang de Bargen LA 115,IB,indet,indiff,30,Hingst_1959
+Mang de Bargen LA 115,Ic,indet,indiff,34,Hingst_1959
+Mang de Bargen LA 115,Id,indet,indiff,35,Hingst_1959
+Mang de Bargen LA 115,IIA,indet,indiff,45,Hingst_1959
+Mang de Bargen LA 115,IIB,indet,indiff,30,Hingst_1959
+Aarupgaard,Per_VI,indet,indiff,300,Jensen_2005
+Aarupgaard,I.1,indet,indiff,600,Jensen_2005
+Aarupgaard,I.2,indet,indiff,400,Jensen_2005
+Aarre,I.1a,indet,indiff,300,Jensen_2005
+Aarre,I.1b,indet,indiff,400,Jensen_2005
+Aarre,I.2a,indet,indiff,300,Jensen_2005
+Mühlen-Eichsen SG,IA,indet,indiff,46,Keiling_1969_cont
+Mühlen-Eichsen SG,IB,indet,indiff,49,Keiling_1969_cont
+Mühlen-Eichsen SG,Ic,indet,indiff,117,Keiling_1969_cont
+Mühlen-Eichsen SG,IIA,indet,indiff,214,Keiling_1969_cont
+Mühlen-Eichsen SG,IIB,indet,indiff,40,Keiling_1969_cont
+Mühlen-Eichsen SG,IIc,indet,indiff,4,Keiling_1969_cont
+Mühlen-Eichsen SG,indiff,indet,indiff,452,broad_horizon
+Cammer,indiff,indet,inf1,11,broad_horizon
+Cammer,indiff,indet,inf2,10,broad_horizon
+Cammer,indiff,indet,ad,19,broad_horizon
+Cammer,IIA,indet,ad,19,Seyer_1982
+Cammer,IIA,indet,inf2,3,Seyer_1982
+Cammer,IIA,indet,juv,2,Seyer_1982
+Cammer,IIb1,indet,inf2,3,Seyer_1982
+Cammer,IIb1,indet,ad,8,Seyer_1982
+Cammer,IIb2,indet,inf2,2,Seyer_1982
+Cammer,IIb2,indet,ad,11,Seyer_1982
