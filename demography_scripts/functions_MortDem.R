@@ -9,9 +9,9 @@ library(fuzzyjoin)
 library(gdata)
 
 
-##
+####################
 # Helper Functions
-##
+####################
 
 # Helper function for renaming columns to ensure consistent naming
 rename_columns <- function(data, col_mapping) {
@@ -49,9 +49,10 @@ ensure_numeric <- function(data, cols) {
     mutate(across(all_of(existing_cols), ~ as.numeric(.)))
 }
 
-##
+
+####################
 # Core Functions
-##
+####################
 
 # Harmonization Table Creation Function
 create_harmonization_table <- function(relative_chron_data,
@@ -497,8 +498,9 @@ harmonize_chronologies <- function(mortuary_data1,
 
 
   # 
-  # Step 8: Compute Horizon Brackets
+  # Step 7: Compute Horizon Brackets
   # 
+  
   #Takes a look at the lowest and highest occuring horizon values and 
   #multiplies them by the provided bracketing size
   
@@ -509,7 +511,7 @@ harmonize_chronologies <- function(mortuary_data1,
     )
   
   # 
-  # Step 9: Generate Horizon Buckets
+  # Step 8: Generate Horizon Buckets
   # 
   
   harmonized_data <- harmonized_data %>%
@@ -526,10 +528,10 @@ harmonize_chronologies <- function(mortuary_data1,
     )
   
   # 
-  # Step 10: Assign Horizon Bucket by Sampling
+  # Step 9: Assign Horizon Bucket by Sampling
   # 
   
-  #set.seed(42)  # For reproducibility
+  #set.seed(42)  # For testing only, otherwise set seed outside of function (e.g. in the Rmd)
   
   harmonized_data <- harmonized_data %>%
     mutate(horizon_buckets = map(horizon_buckets, ~ if(is.null(.x)) numeric(0) else .x)) %>%
@@ -692,7 +694,7 @@ harmonize_chronologies <- function(mortuary_data1,
 
   
   # 
-  # Step 12: Filter Out Rows with Missing Horizon Values
+  # Step 10: Filter Out Rows with Missing Horizon Values
   # 
   
   initial_row_count <- nrow(harmonized_data)
@@ -703,13 +705,7 @@ harmonize_chronologies <- function(mortuary_data1,
     filter(!is.na(horizon_bucket_start) & !is.na(horizon_bucket_end))
   rows_dropped <- initial_row_count - nrow(harmonized_data)
   message("[DEBUG] Number of rows dropped due to NA horizon values: ", rows_dropped)
-
   
-  # 
-  # Step 13: Calculate Probability
-  # 
-  
-
 }
 
 analyze_occupancy <- function(harmonized_data, 
@@ -722,10 +718,10 @@ analyze_occupancy <- function(harmonized_data,
                               cemetery_region_col = "cemetery_region",
                               coord_x_col = "coord_x",
                               coord_y_col = "coord_y",
-                              fuzzy_match = TRUE,
-                              max_fuzzy_distance = 0.2,
+                              fuzzy_match = TRUE, 
+                              max_fuzzy_distance = 0.2, #for fuzzy matching on table join
                               change_threshold = 2,
-                              distance_threshold = 50000,
+                              distance_threshold = 50000, #for density plotting in m
                               horizon_bracket_size = 10,
                               beast_min_length = 5 #This did not end up getting used but is left in for compatibility
 ) {
@@ -742,6 +738,10 @@ analyze_occupancy <- function(harmonized_data,
   library(spdep)
   library(purrr)
   library(tidyr)
+  library(gganimate) # for animation
+  library(rnaturalearth)
+  library(rnaturalearthdata)
+  library(scales)
   
   #
   # Step 1: Standardize Site Names and Merge Meta Data
@@ -801,9 +801,9 @@ analyze_occupancy <- function(harmonized_data,
   # Step 2: Compute Entries Per Period and Variance from Probability (p=1/num_buckets)
   #
   
-  # Probability per burial: p = 1/num_buckets if num_buckets>0, else p=0.
-  # expected_entry for a bucket = sum of p for all burials in that bucket
-  # variance for a bucket = sum over burials of p*(1-p)
+  ##### Probability per burial: p = 1/num_buckets if num_buckets>0, else p=0.
+  ##### expected_entry for a bucket = sum of p for all burials in that bucket
+  ##### variance for a bucket = sum over burials of p*(1-p)
   
   occupancy_summary <- combined_data %>%
     group_by(!!sym(site_name_col), !!sym(horizon_bucket_col)) %>%
@@ -817,9 +817,9 @@ analyze_occupancy <- function(harmonized_data,
   # Step 3: Temporal Trends (Normalized)
   #
   
-  # We currently have entries_per_period as sum of p over all burials. We must also incorporate cemetery_size.
-  # Each burial belongs to one cemetery; if we want normalized occupancy = (sum p)/cemetery_size?
-  # Solution: re-join cemetery_size into occupancy_summary:
+  ##### We currently have entries_per_period as sum of p over all burials. We must also incorporate cemetery_size.
+  ##### Each burial belongs to one cemetery; if we want normalized occupancy = (sum p)/cemetery_size?
+  ##### Solution: re-join cemetery_size into occupancy_summary:
   
   occupancy_summary <- occupancy_summary %>%
     left_join(
@@ -831,18 +831,18 @@ analyze_occupancy <- function(harmonized_data,
       normalized_entries = entries_per_period / .data[[cemetery_size_col]]
     )
   
-  # Calculate mean trend across all cemeteries with CI:
-  # Combine variances: we have variance_entries for each cemetery-bucket. 
+  #####Calculate mean trend across all cemeteries with CI:
+  ##### Combine variances: we have variance_entries for each cemetery-bucket. 
 
   global_trend <- occupancy_summary %>%
-    group_by(!!sym(horizon_bucket_col)) %>%
+    group_by(!!sym(horizon_bucket_col)) %>% #grouped by horizon bucket
     summarise(
-      mean_entries = mean(normalized_entries, na.rm = TRUE),
-      n_cem = n(),
-      combined_variance = sum(variance_entries/(cemetery_size^2), na.rm = TRUE)/(n_cem^2),
-      se = sqrt(combined_variance),
-      ci_lower = mean_entries - 1.96*se,
-      ci_upper = mean_entries + 1.96*se,
+      mean_entries = mean(normalized_entries, na.rm = TRUE), #mean of entries per horizon bucket
+      n_cem = n(), #n of cemeteries
+      combined_variance = sum(variance_entries/(cemetery_size^2), na.rm = TRUE)/(n_cem^2), 
+      se = sqrt(combined_variance), #standard deviation
+      ci_lower = mean_entries - 1.96*se, #lower end of 2nd standard deviation
+      ci_upper = mean_entries + 1.96*se, #upper end of 2nd standard deviation
       .groups = "drop"
     )
   
@@ -891,13 +891,15 @@ analyze_occupancy <- function(harmonized_data,
   # Step 4: Spatial Size-Density Over Time (Not Normalized)
   #
   
-  # pick a subset of horizon buckets
-  #unique_buckets <- sort(unique(harmonized_data[[horizon_bucket_col]]))
-  #if(length(unique_buckets) > 4) {
-   # selected_buckets <- unique_buckets[round(seq(4, length(unique_buckets), length.out = 6))]
-  #} else {
-   # selected_buckets <- unique_buckets
+  ##### pick a subset of horizon buckets - for convenience hardcoded here
+  
+  # unique_buckets <- sort(unique(harmonized_data[[horizon_bucket_col]]))
+  # if(length(unique_buckets) > 4) {
+  # selected_buckets <- unique_buckets[round(seq(4, length(unique_buckets), length.out = 6))]
+  # } else {
+  # selected_buckets <- unique_buckets
   #}
+  
   selected_buckets <- c(30, 60, 90, 120)
   
   spatial_slices <- occupancy_summary %>%
@@ -960,12 +962,82 @@ analyze_occupancy <- function(harmonized_data,
   #Combine the four maps into a 2x2 grid
   final_4_map_layout <- (plots_list[[1]] | plots_list[[2]]) /
     (plots_list[[3]] | plots_list[[4]])
+
+  # --- PART B: All horizon buckets + animation
   
+  all_buckets <- sort(unique(occupancy_summary[[horizon_bucket_col]]))
+  
+  spatial_slices_all <- occupancy_summary %>%
+    filter(!!sym(horizon_bucket_col) %in% all_buckets) %>%
+    left_join(
+      combined_data %>% distinct(site_name, coord_x = .data[[coord_x_col]], coord_y = .data[[coord_y_col]]),
+      by = site_name_col
+    ) %>%
+    filter(!is.na(coord_x) & !is.na(coord_y))
+  
+  spatial_slices_combined <- spatial_slices_all %>%
+    mutate(
+      combined_bucket = floor(horizon_bucket / 10) * 10
+    )
+  
+  spatial_slices_combined <- spatial_slices_combined %>%
+    group_by(horizon_bucket) %>%
+    filter(n() > 1) %>%      # keep only buckets with actual data
+    ungroup()
+  
+  spatial_slices_combined <- spatial_slices_combined %>%
+    mutate(
+      coord_x = as.numeric(coord_x),
+      coord_y = as.numeric(coord_y),
+    )
+
 
   
+  # Use gganimate's transition through horizon buckets
+  p_animation <- ggplot(spatial_slices_combined, aes(x = coord_x, y = coord_y)) +
+    geom_sf(data = world, fill = "gray95", color = "gray80",inherit.aes = FALSE) +
+    coord_sf(xlim = c(7.5, 14.5), ylim = c(51.5, 57.5)) +
+    stat_density2d(
+      aes(fill = after_stat(level), alpha = after_stat(level)),
+      geom = "polygon",
+      contour = TRUE,
+      contour_var = "ndensity",
+      #h = c(2, 2),
+      bins = 7
+    ) +
+    scale_fill_viridis_c(option = "C") +
+    scale_alpha(range = c(0.1, 0.9), guide = "none") +
+    geom_point(aes(size = entries_per_period), color = "red3", alpha = 0.6) +
+    scale_size_continuous(guide = guide_legend(
+      override.aes = list(fill = "white", alpha = 1, shape = 19)
+    )) +
 
-  return(list(p_global_trend,
-        p_region_trend,
-        final_4_map_layout 
+    labs(
+      title = "Horizon Bucket: {closest_state}",
+      x = "Longitude",
+      y = "Latitude",
+      size = "Expected Burials",
+      fill = "Density Level"
+    ) +
+    theme(
+      legend.background = element_rect(fill = "white", color = NA),
+      legend.key = element_rect(fill = "white", color = NA),
+      legend.box.background = element_rect(fill = "white", color = NA),
+      panel.background = element_rect(fill = "aliceblue")
+    ) +
+    transition_states(as.factor(combined_bucket), 
+                      transition_length = 15, 
+                      state_length = 30) +
+    ease_aes("circular-in-out")
+  
+  # Optionally, outside this function you could do, for example:
+  #   animate(p_animation, nframes = 100, fps = 5)
+  #   anim_save(\"horizon_animation.gif\", animation = last_animation())
+  
+  return(list(
+    p_global_trend       = p_global_trend,
+    p_region_trend       = p_region_trend,
+    final_4_map_layout   = final_4_map_layout,
+    p_animation          = p_animation  # the gganimate object
   ))
 }

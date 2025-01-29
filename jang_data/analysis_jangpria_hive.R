@@ -133,6 +133,22 @@ results <- analyze_occupancy(
 print(results[[1]])
 print(results[[2]])
 print(results[[3]])
+print(results[[4]])
+print(results[[5]])
+
+p_animation <- results$p_animation
+
+library(gapminder)
+library(gganimate)
+library(gifski)
+
+hoagiffed <- animate(p_animation, nframes = 480, fps = 24, height=750, width=650, renderer=gifski_renderer(), end_pause = 24, start_pause = 24)
+
+anim_save("hoangif.gif", hoagiffed)
+
+
+
+
 
 ## mortAAR start ##
 

@@ -128,7 +128,7 @@ The term Jastorf Culture (German: ‘Jastorfkultur’) describes an ‘archaeolo
 
 Since this study is examining the Pre-Roman Iron Age of Northern Germany and Jutland, it seemed adequate to follow convention by shortening the period to PRIA and abbreviating the regions as JaNG, combining the two as JaNGPRIA. This deliberately unwieldy combination of letters is in no way not to be used as a replacement of ‘Jastorf Culture’. As will be argued, it instead seeks to leave that term and its connotations behind entirely as a fragment of the history of research.
 
-```{r fig.cap = "Research containing selected keywords, based on JSTOR indexed publications filtered by keyword 'archaeology' between 1870 and 2024. Dataset: constellate.org", fig.width=8, fig.height=4, dpi=120}
+```{r fig.cap = "Research containing selected keywords, based on JSTOR indexed publications filtered by keyword 'archaeology' between 1870 and 2024. Dataset: constellate.org", fig.width=8, fig.height=5, dpi=120}
 library(ggplot2)
 library(tidyverse)
 require(reshape2)
