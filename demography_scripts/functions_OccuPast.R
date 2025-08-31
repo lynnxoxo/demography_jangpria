@@ -443,6 +443,8 @@ choose_one_bucket <- function(bks, wts, mode=c("deterministic_max","stochastic")
 #' Optional meta fallback uses site-level intervals with profile f_meta,
 #' scaled by `meta_weight`, and capped by `meta_cap_fraction` per site.
 #' Returns long table with per-record bucket weights plus site metadata.
+#' harmonize_chronologies — Main allocation engine (sex/age preserved)
+#' (Only the parts that changed are commented with NEW/CHANGED.)
 harmonize_chronologies <- function(
     mort_indiv,
     mort_agg,
@@ -452,12 +454,11 @@ harmonize_chronologies <- function(
     horizon_offset       = 0,
     sampling             = c("deterministic_max","stochastic","fractional"),
     seed                 = NULL,
-    # within-interval profile for primary + meta
     primary_profile      = weight_profile("uniform"),
     meta_profile         = founding_rise_taper(alpha=2.5, beta=6),
     meta_fallback        = TRUE,
     meta_weight          = 0.25,
-    meta_cap_fraction    = 0.30,   # cap meta share per site (0..1). NULL to disable
+    meta_cap_fraction    = 0.30,
     debug                = FALSE
 ) {
   sampling <- match.arg(sampling)
@@ -466,31 +467,31 @@ harmonize_chronologies <- function(
   check_required(harm_tab, req_harm, "harmonization table")
   check_required(meta_data, req_meta_core, "metadata core")
   
-  mort_all <- bind_rows(
-    prepare_mortuary_individual(mort_indiv %||% tibble(), debug=FALSE),
-    prepare_mortuary_aggregated(mort_agg %||% tibble(), debug=FALSE)
+  mort_all <- dplyr::bind_rows(
+    prepare_mortuary_individual(mort_indiv %||% tibble::tibble(), debug = FALSE),
+    prepare_mortuary_aggregated(mort_agg  %||% tibble::tibble(), debug = FALSE)
   )
-  if (nrow(mort_all)==0) stop("[harmonize] No mortuary rows provided.", call.=FALSE)
-  check_required(mort_all, c("burial_id","phase_id","site_id","source"), "mortuary (combined)")
+  if (nrow(mort_all) == 0) stop("[harmonize] No mortuary rows provided.", call. = FALSE)
+  check_required(mort_all, c("burial_id","phase_id","site_id","source","sex_gender","age"), "mortuary (combined)")
   
   # Join phases
-  joined <- mort_all %>% left_join(harm_tab, by="phase_id")
+  joined <- mort_all %>% dplyr::left_join(harm_tab, by = "phase_id")
   # Effective interval
-  with_int <- joined %>% mutate(
-    eff_start0 = coalesce(fade_in_start, horizon_start),
-    eff_end0   = coalesce(fade_out_end,  horizon_end),
+  with_int <- joined %>% dplyr::mutate(
+    eff_start0 = dplyr::coalesce(fade_in_start, horizon_start),
+    eff_end0   = dplyr::coalesce(fade_out_end,  horizon_end),
     eff_start  = pmin(eff_start0, eff_end0),
     eff_end    = pmax(eff_start0, eff_end0)
   )
   
   # PRIMARY allocation
   alloc_primary <- with_int %>%
-    mutate(
-      buckets       = pmap(list(eff_start, eff_end),
-                           ~ bucket_seq_with_offset(..1, ..2, horizon_bracket_size, horizon_offset)),
-      w_overlaps    = pmap(list(buckets, eff_start, eff_end),
-                           ~ weighted_overlaps(..1, ..2, ..3, horizon_bracket_size, primary_profile)),
-      num_buckets   = lengths(buckets)
+    dplyr::mutate(
+      buckets    = purrr::pmap(list(eff_start, eff_end),
+                               ~ bucket_seq_with_offset(..1, ..2, horizon_bracket_size, horizon_offset)),
+      w_overlaps = purrr::pmap(list(buckets, eff_start, eff_end),
+                               ~ weighted_overlaps(..1, ..2, ..3, horizon_bracket_size, primary_profile)),
+      num_buckets = lengths(buckets)
     )
   
   if (sampling == "fractional") {
@@ -500,83 +501,87 @@ harmonize_chronologies <- function(
       sw <- sum(w, na.rm = TRUE)
       if (!is.finite(sw) || sw <= 0) rep(1/length(bks), length(bks)) else (w / sw)
     }
-    
     primary_long <- alloc_primary %>%
-      mutate(
+      dplyr::mutate(
         p_vec = purrr::map2(buckets, w_overlaps, normalize_w),
         pairs = purrr::map2(buckets, p_vec,
                             ~ tibble::tibble(horizon_bucket = .x, weight_entry = .y))
       ) %>%
-      select(burial_id, site_id, source, eff_start, eff_end, pairs) %>%
+      dplyr::select(burial_id, site_id, source, sex_gender, age, eff_start, eff_end, pairs) %>%  # NEW
       tidyr::unnest(pairs) %>%
       dplyr::filter(!is.na(horizon_bucket) & weight_entry > 0) %>%
       dplyr::mutate(assign_source = "primary")
   } else {
-    # single bucket per record
-    picks <- pmap(list(alloc_primary$buckets, alloc_primary$w_overlaps, alloc_primary$burial_id),
-                  ~ choose_one_bucket(..1, ..2, mode=sampling, global_seed=seed, row_id=..3))
+    picks <- purrr::pmap(list(alloc_primary$buckets, alloc_primary$w_overlaps, alloc_primary$burial_id),
+                         ~ choose_one_bucket(..1, ..2, mode = sampling, global_seed = seed, row_id = ..3))
     primary_long <- alloc_primary %>%
-      mutate(horizon_bucket = map_dbl(picks, "bucket"),
-             p_selected     = map_dbl(picks, "p"),
-             weight_entry   = p_selected) %>%   # unbiased wrt fractional baseline
-      filter(!is.na(horizon_bucket)) %>%
-      transmute(burial_id, site_id, source, eff_start, eff_end, horizon_bucket, weight_entry,
-                assign_source="primary")
+      dplyr::mutate(horizon_bucket = purrr::map_dbl(picks, "bucket"),
+                    p_selected     = purrr::map_dbl(picks, "p"),
+                    weight_entry   = p_selected) %>%
+      dplyr::filter(!is.na(horizon_bucket)) %>%
+      dplyr::transmute(burial_id, site_id, source, sex_gender, age, eff_start, eff_end,  # NEW
+                       horizon_bucket, weight_entry, assign_source = "primary")
   }
   
-  # META fallback (only unassigned in non-fractional; in fractional, we add additional rows if primary missing)
-  meta_rows <- tibble()
-  if (meta_fallback) {
-    meta_bounds <- site_meta_intervals(meta_data, harm_tab) %>% select(site_id, ia_start, ia_end, pp_start, pp_end)
-    
-    # Which rows need meta? For fractional: rows with zero buckets. For others: those dropped above.
+  # META fallback
+  meta_rows <- tibble::tibble()
+  if (isTRUE(meta_fallback)) {
+    meta_bounds <- site_meta_intervals(meta_data, harm_tab) %>% dplyr::select(site_id, ia_start, ia_end, pp_start, pp_end)
     need_meta <- alloc_primary %>%
-      mutate(has_primary = lengths(buckets) > 0) %>%
-      filter(!has_primary) %>%
-      select(burial_id, site_id, source, eff_start, eff_end)
+      dplyr::mutate(has_primary = lengths(buckets) > 0) %>%
+      dplyr::filter(!has_primary) %>%
+      dplyr::select(burial_id, site_id, source, eff_start, eff_end)
     
     if (nrow(need_meta) > 0) {
       meta_aug <- need_meta %>%
-        left_join(meta_bounds, by="site_id") %>%
-        mutate(m_start = coalesce(ia_start, pp_start),
-               m_end   = coalesce(ia_end,   pp_end)) %>%
-        mutate(
-          m_buckets    = pmap(list(m_start, m_end),
-                              ~ bucket_seq_with_offset(..1, ..2, horizon_bracket_size, horizon_offset)),
-          m_w_overlaps = pmap(list(m_buckets, m_start, m_end),
-                              ~ weighted_overlaps(..1, ..2, ..3, horizon_bracket_size, meta_profile))
+        dplyr::left_join(meta_bounds, by = "site_id") %>%
+        dplyr::mutate(m_start = dplyr::coalesce(ia_start, pp_start),
+                      m_end   = dplyr::coalesce(ia_end,   pp_end)) %>%
+        dplyr::mutate(
+          m_buckets    = purrr::pmap(list(m_start, m_end),
+                                     ~ bucket_seq_with_offset(..1, ..2, horizon_bracket_size, horizon_offset)),
+          m_w_overlaps = purrr::pmap(list(m_buckets, m_start, m_end),
+                                     ~ weighted_overlaps(..1, ..2, ..3, horizon_bracket_size, meta_profile))
         )
       
       if (sampling == "fractional") {
+        normalize_w <- function(bks, w) {
+          if (length(bks) == 0) return(numeric(0))
+          sw <- sum(w, na.rm = TRUE)
+          if (!is.finite(sw) || sw <= 0) rep(1/length(bks), length(bks)) else (w / sw)
+        }
         meta_rows <- meta_aug %>%
-          mutate(
+          dplyr::mutate(
             p_vec = purrr::map2(m_buckets, m_w_overlaps, normalize_w),
             pairs = purrr::map2(m_buckets, p_vec,
                                 ~ tibble::tibble(horizon_bucket = .x, w = .y))
           ) %>%
-          select(burial_id, site_id, source, pairs) %>%
+          dplyr::select(burial_id, site_id, source, pairs) %>%
           tidyr::unnest(pairs) %>%
           dplyr::filter(!is.na(horizon_bucket) & w > 0) %>%
           dplyr::mutate(weight_entry = meta_weight * w,
-                        assign_source = "meta") %>%
-          dplyr::select(burial_id, site_id, source, horizon_bucket, weight_entry, assign_source)
+                        assign_source = "meta",
+                        sex_gender = NA_character_,  # NEW: meta rows have NA
+                        age        = NA_character_) %>%
+          dplyr::select(burial_id, site_id, source, sex_gender, age, horizon_bucket, weight_entry, assign_source)
       } else {
-        picks_m <- pmap(list(meta_aug$m_buckets, meta_aug$m_w_overlaps, meta_aug$burial_id),
-                        ~ choose_one_bucket(..1, ..2, mode=sampling, global_seed=seed, row_id=paste0(..3,"::meta")))
+        picks_m <- purrr::pmap(list(meta_aug$m_buckets, meta_aug$m_w_overlaps, meta_aug$burial_id),
+                               ~ choose_one_bucket(..1, ..2, mode = sampling, global_seed = seed, row_id = paste0(..3, "::meta")))
         meta_rows <- meta_aug %>%
-          mutate(horizon_bucket = map_dbl(picks_m, "bucket"),
-                 p_selected     = map_dbl(picks_m, "p"),
-                 weight_entry   = meta_weight * p_selected) %>%
-          filter(!is.na(horizon_bucket)) %>%
-          transmute(burial_id, site_id, source, horizon_bucket, weight_entry, assign_source="meta")
+          dplyr::mutate(horizon_bucket = purrr::map_dbl(picks_m, "bucket"),
+                        p_selected     = purrr::map_dbl(picks_m, "p"),
+                        weight_entry   = meta_weight * p_selected) %>%
+          dplyr::filter(!is.na(horizon_bucket)) %>%
+          dplyr::transmute(burial_id, site_id, source,
+                           sex_gender = NA_character_, age = NA_character_,  # NEW
+                           horizon_bucket, weight_entry, assign_source = "meta")
       }
     }
   }
   
-  # Combine
-  combined <- bind_rows(primary_long, meta_rows)
+  combined <- dplyr::bind_rows(primary_long, meta_rows)
   
-  # Apply meta cap per site (overall across buckets)
+  # Meta cap per site (applies only to meta rows)
   if (!is.null(meta_cap_fraction)) {
     site_totals <- combined %>%
       dplyr::group_by(site_id) %>%
@@ -585,43 +590,37 @@ harmonize_chronologies <- function(
         meta    = sum(weight_entry[assign_source == "meta"],     na.rm = TRUE),
         .groups = "drop"
       ) %>%
-      dplyr::mutate(
-        total = primary + meta,
-        cap   = meta_cap_fraction * total,
-        scale = dplyr::if_else(meta > 0 & meta > cap, cap / meta, 1)
-      ) %>%
+      dplyr::mutate(total = primary + meta,
+                    cap   = meta_cap_fraction * total,
+                    scale = dplyr::if_else(meta > 0 & meta > cap, cap / meta, 1)) %>%
       dplyr::select(site_id, scale)
     
     combined <- combined %>%
       dplyr::left_join(site_totals, by = "site_id") %>%
       tidyr::replace_na(list(scale = 1)) %>%
-      dplyr::mutate(
-        weight_entry = dplyr::if_else(assign_source == "meta",
-                                      weight_entry * scale, weight_entry)
-      ) %>%
+      dplyr::mutate(weight_entry = dplyr::if_else(assign_source == "meta", weight_entry * scale, weight_entry)) %>%
       dplyr::select(-scale)
   }
   
-  
-  # Attach site metadata core
   meta_core <- meta_data %>%
-    select(site_id, site_name, coord_x, coord_y, cemetery_size, cemetery_region)
+    dplyr::select(site_id, site_name, coord_x, coord_y, cemetery_size, cemetery_region)
+  
   final <- combined %>%
-    left_join(meta_core, by="site_id") %>%
-    mutate(horizon_bracket_size = horizon_bracket_size,
-           horizon_offset       = horizon_offset)
+    dplyr::left_join(meta_core, by = "site_id") %>%
+    dplyr::mutate(horizon_bracket_size = horizon_bracket_size,
+                  horizon_offset       = horizon_offset)
   
   if (debug) {
     cat(sprintf("[harmonize] rows=%d | sites=%d | Pseudo Horizons=%d\n",
-                nrow(final), n_distinct(final$site_id), n_distinct(final$horizon_bucket)))
-    tab <- table(final$assign_source, useNA="ifany")
+                nrow(final), dplyr::n_distinct(final$site_id), dplyr::n_distinct(final$horizon_bucket)))
+    tab <- table(final$assign_source, useNA = "ifany")
     cat(sprintf("[harmonize] sources: primary=%d | meta=%d\n",
                 unname(tab["primary"] %||% 0L), unname(tab["meta"] %||% 0L)))
   }
   
   list(
     data       = final,
-    drop_table = tibble(), # (drops are handled earlier; here we return placed rows)
+    drop_table = tibble::tibble(),
     params     = list(
       bracket_size = horizon_bracket_size, offset = horizon_offset,
       sampling = sampling, seed = seed,
@@ -632,6 +631,7 @@ harmonize_chronologies <- function(
     )
   )
 }
+
 
 
 # ===============================
